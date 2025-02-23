@@ -1,0 +1,13 @@
+{
+    "name": "base",
+    "build": {
+      "dockerfile": "Dockerfile"
+    },
+    "features": {
+      "ghcr.io/devcontainers/features/git:1": {},
+      "ghcr.io/devcontainers/features/aws-cli:1": {}
+      // "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    },
+    "remoteUser": "vscode",
+    "postCreateCommand": "/bin/env .devcontainer/post_create.sh"
+}

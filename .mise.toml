@@ -1,0 +1,10 @@
+[env]
+LANGSMITH_TRACING = true
+LANGSMITH_ENDPOINT = "https://api.smith.langchain.com"
+
+[tools]
+uv = "latest"
+python = "3.12"
+
+[tasks.langgraph]
+run = "uv run langgraph up"
