@@ -65,8 +65,9 @@ EXISTING_TEST_CLASS:
             }
         )
 
-        # with open("last.diff", "w") as f:
-        #     f.write(diff)
+        # デバッグ用にdiffを保存
+        with open("debug/last_diff_generator.diff", "w") as f:
+            f.write(diff)
 
         return {
             "diff": diff,

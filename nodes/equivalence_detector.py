@@ -72,6 +72,11 @@ SOURCE_CODE:
                 "diffs_with_index": diffs_with_index,
             }
         )
+
+        # デバッグ用に結果を保存
+        with open("debug/last_equivalence_detector.json", "w") as f:
+            f.write(result_json)
+
         result = json.loads(result_json)
 
         faults = []
