@@ -160,7 +160,7 @@ MUTANT <END>
         assert result[0] == diff
 
     def test_extract_diff_mutants_nested_mutants(self, diff_applier_node):
-        """ネストされたMUTANTブロックを含むdiffのテスト（無効なケース）"""
+        """ネストされたMUTANTブロックを含むdiffのテスト（許容ケース）"""
         diff = """--- a/test.py
 +++ b/test.py
 @@ -1,5 +1,5 @@
@@ -171,9 +171,30 @@ MUTANT <START>
 MUTANT <END>
 MUTANT <END>"""
 
-        with pytest.raises(Exception) as exc_info:
-            diff_applier_node._extract_diff_mutants(diff)
-        assert "ネストされたMUTANTブロックは許可されていません" in str(exc_info.value)
+        expected1 = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,5 @@
+MUTANT <START>
+-def hello():
+MUTANT <END>
++def hello_world():
+MUTANT <SKIP>
+MUTANT <SKIP>"""
+
+        expected2 = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,5 @@
+MUTANT <SKIP>
+-def hello():
+MUTANT <START>
++def hello_world():
+MUTANT <END>
+MUTANT <SKIP>"""
+
+        result = diff_applier_node._extract_diff_mutants(diff)
+        assert len(result) == 2
+        assert result[0] == expected1
+        assert result[1] == expected2
 
     def test_extract_diff_mutants_with_context(self, diff_applier_node):
         """コンテキスト行を含むdiffのテスト"""
