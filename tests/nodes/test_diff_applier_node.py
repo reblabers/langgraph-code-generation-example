@@ -12,7 +12,7 @@ class TestDiffApplierNode:
     def diff_applier_node(self, repository):
         return DiffApplierNode(repository)
 
-    def test_extract_final_diffs_single_mutant(self, diff_applier_node):
+    def test_extract_diff_mutants_single_mutant(self, diff_applier_node):
         """単一のMUTANTブロックを含むdiffのテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -24,11 +24,11 @@ MUTANT <START>
 MUTANT <END>
      return None"""
 
-        result = diff_applier_node._extract_final_diffs(diff)
+        result = diff_applier_node._extract_diff_mutants(diff)
         assert len(result) == 1
         assert result[0] == diff
 
-    def test_extract_final_diffs_multiple_mutants(self, diff_applier_node):
+    def test_extract_diff_mutants_multiple_mutants(self, diff_applier_node):
         """複数のMUTANTブロックを含むdiffのテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -69,12 +69,12 @@ MUTANT <START>
 +    return "Hello"
 MUTANT <END>"""
 
-        result = diff_applier_node._extract_final_diffs(diff)
+        result = diff_applier_node._extract_diff_mutants(diff)
         assert len(result) == 2
         assert result[0] == expected1
         assert result[1] == expected2
 
-    def test_extract_final_diffs_no_mutants(self, diff_applier_node):
+    def test_extract_diff_mutants_no_mutants(self, diff_applier_node):
         """MUTANTブロックを含まないdiffのテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -83,10 +83,10 @@ MUTANT <END>"""
      print("Hello")
      return None"""
 
-        result = diff_applier_node._extract_final_diffs(diff)
+        result = diff_applier_node._extract_diff_mutants(diff)
         assert len(result) == 0
 
-    def test_extract_final_diffs_unmatched_tags(self, diff_applier_node):
+    def test_extract_diff_mutants_unmatched_tags(self, diff_applier_node):
         """MUTANTの開始タグと終了タグの数が一致しない場合のテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -99,10 +99,10 @@ MUTANT <START>
 -    return None"""
 
         with pytest.raises(Exception) as exc_info:
-            diff_applier_node._extract_final_diffs(diff)
+            diff_applier_node._extract_diff_mutants(diff)
         assert "MUTANT <START>とMUTANT <END>の数が一致しません" in str(exc_info.value)
 
-    def test_extract_final_diffs_invalid_range(self, diff_applier_node):
+    def test_extract_diff_mutants_invalid_range(self, diff_applier_node):
         """開始位置が終了位置より後にある場合のテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -113,10 +113,10 @@ MUTANT <END>
 MUTANT <START>"""
 
         with pytest.raises(Exception) as exc_info:
-            diff_applier_node._extract_final_diffs(diff)
+            diff_applier_node._extract_diff_mutants(diff)
         assert "MUTANTブロックの範囲が無効です" in str(exc_info.value)
 
-    def test_extract_final_diffs_empty_mutant(self, diff_applier_node):
+    def test_extract_diff_mutants_empty_mutant(self, diff_applier_node):
         """空のMUTANTブロックを含むdiffのテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -126,11 +126,11 @@ MUTANT <START>
 MUTANT <END>
      return None"""
 
-        result = diff_applier_node._extract_final_diffs(diff)
+        result = diff_applier_node._extract_diff_mutants(diff)
         assert len(result) == 1
         assert result[0] == diff
 
-    def test_extract_final_diffs_nested_mutants(self, diff_applier_node):
+    def test_extract_diff_mutants_nested_mutants(self, diff_applier_node):
         """ネストされたMUTANTブロックを含むdiffのテスト（無効なケース）"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -143,10 +143,10 @@ MUTANT <END>
 MUTANT <END>"""
 
         with pytest.raises(Exception) as exc_info:
-            diff_applier_node._extract_final_diffs(diff)
+            diff_applier_node._extract_diff_mutants(diff)
         assert "ネストされたMUTANTブロックは許可されていません" in str(exc_info.value)
 
-    def test_extract_final_diffs_with_context(self, diff_applier_node):
+    def test_extract_diff_mutants_with_context(self, diff_applier_node):
         """コンテキスト行を含むdiffのテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -158,7 +158,7 @@ MUTANT <START>
 MUTANT <END>
  # This is another context line"""
 
-        result = diff_applier_node._extract_final_diffs(diff)
+        result = diff_applier_node._extract_diff_mutants(diff)
         assert len(result) == 1
         assert result[0] == diff
         assert "# This is a context line" in result[0]

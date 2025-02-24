@@ -34,21 +34,20 @@ class DiffApplierNode:
         source_code = source_code_path.read_text()
         source_code_hash = hashlib.sha256(source_code.encode()).hexdigest()
 
-        diff = state["diff"]
-        final_diffs = self._extract_final_diffs(diff)
+        diff_mutants = self._extract_diff_mutants(state["diff"])
 
         diff_faults = []
-        for final_diff in final_diffs:
+        for diff_mutant in diff_mutants:
             # リポジトリをクリーン
             self.repository.clean()
 
             mutated_path = apply_diff_to_file_for_mutant(
                 source_path=source_code_path,
-                diff=final_diff,
+                diff=diff_mutant,
             )
 
             if mutated_path is None:
-                print("Failed to apply diff to file", final_diff)
+                print("Failed to apply diff to file", diff_mutant)
                 continue
 
             # コードに適用
@@ -80,14 +79,14 @@ class DiffApplierNode:
             "diff_faults": diff_faults,
         }
 
-    def _extract_final_diffs(self, diff: str) -> List[str]:
-        """diffから各MUTANTブロックのfinal_diffのリストを生成します。
+    def _extract_diff_mutants(self, diff: str) -> List[str]:
+        """diffから各MUTANTブロックのdiffのリストを生成します。
 
         Args:
             diff (str): 元のdiffテキスト
 
         Returns:
-            List[str]: 各MUTANTブロックに対応するfinal_diffのリスト
+            List[str]: 各MUTANTブロックに対応するdiffのリスト
         
         Raises:
             Exception: MUTANT <START>とMUTANT <END>の数が一致しない場合

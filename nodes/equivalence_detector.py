@@ -24,11 +24,14 @@ class EquivalenceDetectorNode:
         self.caller = SingleToolCaller(llm, output_equivalence)
         self.prompt_template = ChatPromptTemplate.from_messages([
             ("system", dedent("""
-I'm going to show you a Kotlin class and a set of changes made to it. Here is the original Kotlin class: 'SOURCE_CODE'. Here is the set of changes applied to the class: 'DIFF'.
+I'm going to show you a Kotlin class and a set of changes made to it. Here is the original Kotlin class: 'SOURCE_CODE'. \
+Below, I will show you multiple changes (DIFFs) applied to this class, each with an index number.
 
 INSTRUCTION:
-If applying these changes results in a class that behaves exactly the same as the original, Output 'True'. \
-However, if the changes are not equivalent, Output 'False', and explain how execution of the original version can produce a different behavior compared to the modified version.
+For each DIFF, determine if applying these changes results in a class that behaves exactly the same as the original.
+For each DIFF, output:
+- 'True' if the changes are equivalent
+- 'False' if the changes are not equivalent, and explain how execution of the original version can produce a different behavior compared to the modified version.
             """).strip()),
             ("user", dedent("""
 SOURCE_CODE:
@@ -37,31 +40,35 @@ SOURCE_CODE:
 ```
             """).strip()),
             ("user", dedent("""
-DIFF:
-```diff
-{diff}
-```
+{diffs_with_index}
             """).strip()),
         ])
     
     async def process(self, global_state: GlobalState) -> GlobalState:
         state = LocalState.load_from(global_state)
 
-        faults = []
-        for diff in state["diff_faults"]:
-            result_json = await self.caller.call(
-                prompt_template=self.prompt_template,
-                invoke_args={
-                    "source_code": state["source_code"],
-                    "diff": diff,
-                }
-            )
+        # Format diffs with index numbers
+        diffs_with_index = "\n\n".join([
+            f"DIFF #{i}:\n```diff\n{diff}\n```"
+            for i, diff in enumerate(state["diff_faults"], 1)
+        ])
 
-            result = json.loads(result_json)
+        result_json = await self.caller.call(
+            prompt_template=self.prompt_template,
+            invoke_args={
+                "source_code": state["source_code"],
+                "diffs_with_index": diffs_with_index,
+            }
+        )
+
+        result = json.loads(result_json)
+        faults = []
+        for i, diff in enumerate(state["diff_faults"]):
+            fault_result = result["results"][i]
             faults.append({
                 "diff": diff,
-                "is_equivalent": result["is_equivalent"],
-                "reason": result["reason"],
+                "is_equivalent": fault_result["is_equivalent"],
+                "reason": fault_result["reason"],
             })
 
         return {
