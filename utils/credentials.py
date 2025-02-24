@@ -18,7 +18,7 @@ class Credentials:
 
 
 def get_default_credentials() -> Credentials:
-    from env import get_env
+    from .env import get_env
     env = get_env()
     return get_credentials(env.aws_account_id, env.system_admin_role)
 

@@ -1,17 +1,29 @@
 import asyncio
-from graph_builder import create_graph
-from state import State
+from graphs.code_generator_graph import build_code_generator_graph, initial_state
+from utils.credentials import get_default_credentials
+from utils.llm import get_bedrock_llm
+from utils.repository import Repository
+from pathlib import Path
+
 
 async def main():
-    graph = create_graph()
-    val = graph.get_graph().draw_mermaid_png()
-    
-    # バイナリモードでファイルを開いて書き込み
-    with open("graph.png", "wb") as f:
-        f.write(val)
-    
-    result = graph.invoke({"graph_state" : "Hi, this is Lance.", "bar" : [1, 2, 3]})
-    print(result)
+    credentials = get_default_credentials()
+    llm = get_bedrock_llm(credentials)
+
+    repository = Repository(Path("repositories/kotlin-tracer-mcp"))
+    repository.clean()
+
+    graph = build_code_generator_graph(llm, repository)
+
+    global_state = initial_state(
+        source_code_path=Path("repositories/kotlin-tracer-mcp/src/main/kotlin/com/example/Finder.kt"),
+        test_code_path=Path("repositories/kotlin-tracer-mcp/src/test/kotlin/com/example/FinderTest.kt"),
+    )
+
+    result = await graph.ainvoke(global_state)
+    print(f"is_equivalent: {result['is_equivalent']}")
+    print(f"reason_not_equivalent: {result.get('reason_not_equivalent')}")
+
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())
