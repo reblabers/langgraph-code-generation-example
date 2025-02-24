@@ -87,7 +87,7 @@ MUTANT <END>"""
         assert len(result) == 0
 
     def test_extract_diff_mutants_unmatched_tags(self, diff_applier_node):
-        """MUTANTの開始タグと終了タグの数が一致しない場合のテスト"""
+        """MUTANTの開始タグと終了タグの数が一致しない場合のテスト（許容ケース）"""
         diff = """--- a/test.py
 +++ b/test.py
 @@ -1,5 +1,5 @@
@@ -98,12 +98,33 @@ MUTANT <END>
 MUTANT <START>
 -    return None"""
 
-        with pytest.raises(Exception) as exc_info:
-            diff_applier_node._extract_diff_mutants(diff)
-        assert "MUTANT <START>とMUTANT <END>の数が一致しません" in str(exc_info.value)
+        expected1 = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,5 @@
+MUTANT <START>
+-def hello():
++def hello_world():
+MUTANT <END>
+MUTANT <SKIP>
+-    return None"""
+
+        expected2 = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,5 @@
+MUTANT <SKIP>
+-def hello():
++def hello_world():
+MUTANT <SKIP>
+MUTANT <START>
+-    return None"""
+
+        result = diff_applier_node._extract_diff_mutants(diff)
+        assert len(result) == 2
+        assert result[0] == expected1
+        assert result[1] == expected2
 
     def test_extract_diff_mutants_invalid_range(self, diff_applier_node):
-        """開始位置が終了位置より後にある場合のテスト"""
+        """ENDタグが先に来る場合のテスト（許容ケース）"""
         diff = """--- a/test.py
 +++ b/test.py
 @@ -1,5 +1,5 @@
@@ -112,9 +133,17 @@ MUTANT <END>
 +def hello_world():
 MUTANT <START>"""
 
-        with pytest.raises(Exception) as exc_info:
-            diff_applier_node._extract_diff_mutants(diff)
-        assert "MUTANTブロックの範囲が無効です" in str(exc_info.value)
+        expected = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,5 @@
+MUTANT <SKIP>
+-def hello():
++def hello_world():
+MUTANT <START>"""
+
+        result = diff_applier_node._extract_diff_mutants(diff)
+        assert len(result) == 1
+        assert result[0] == expected
 
     def test_extract_diff_mutants_empty_mutant(self, diff_applier_node):
         """空のMUTANTブロックを含むdiffのテスト"""
