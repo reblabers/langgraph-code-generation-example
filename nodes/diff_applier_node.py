@@ -29,16 +29,16 @@ class DiffApplierNode:
         state = LocalState.load_from(global_state)
         result = await self._process(state)
         return {**global_state, **result}
-       
+
     async def _process(self, state: LocalState):
         # リポジトリをクリーン
         self.repository.clean()
 
         source_code_path = state["source_code_path"]
         source_code = source_code_path.read_text()
-        source_code_hash = hashlib.sha256(source_code.encode()).hexdigest()
+        source_code_hash = self._get_code_hash(source_code)
 
-        diff = self._rearrange_diff(state["diff"])
+        diff = state["diff"]
 
         # デバッグ用にdiffを保存
         with open("debug/last_diff_applier.diff", "w") as f:
@@ -82,7 +82,7 @@ class DiffApplierNode:
 
             # 変更後のソースコードのハッシュ値を記録
             mutated_code = mutated_path.read_text()
-            mutated_code_hash = hashlib.sha256(mutated_code.encode()).hexdigest()
+            mutated_code_hash = self._get_code_hash(mutated_code)
             if source_code_hash == mutated_code_hash:
                 print("SKIPPED: ソースコードが変更されていません")
                 continue
@@ -95,20 +95,10 @@ class DiffApplierNode:
             "diff_faults": diff_faults,
         }
 
-    def _rearrange_diff(self, diff: str) -> str:
-        difflines = diff.splitlines()
-        for index in range(len(difflines)):
-            if "// MUTANT <START>" in difflines[index]:
-                comment_line = difflines[index]
-                i = index
-                while True:
-                    if not difflines[i - 1].startswith("-"):
-                        break
-                    difflines[i] = difflines[i - 1]
-                    i -= 1
-                difflines[i] = comment_line
-        return "\n".join(difflines)
-         
+    def _get_code_hash(self, code: str) -> str:
+        without_comments = "\n".join([line for line in code.splitlines() if not line.strip().startswith("//")])
+        return hashlib.sha256(without_comments.encode()).hexdigest()
+
     def _extract_diff_mutants(self, diff: str) -> List[str]:
         """diffから各MUTANTブロックのdiffのリストを生成します。
         各MUTANTブロックは、STARTタグから次のSTART/END/EOFまでを対象とします。

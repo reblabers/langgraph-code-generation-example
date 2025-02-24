@@ -66,6 +66,8 @@ EXISTING_TEST_CLASS:
             }
         )
 
+        diff = self._rearrange_diff(diff)
+
         # デバッグ用にdiffを保存
         with open("debug/last_diff_generator.diff", "w") as f:
             f.write(diff)
@@ -73,3 +75,17 @@ EXISTING_TEST_CLASS:
         return {
             "diff": diff,
         }
+
+    def _rearrange_diff(self, diff: str) -> str:
+        difflines = diff.splitlines()
+        for index in range(len(difflines)):
+            if "// MUTANT <START>" in difflines[index]:
+                comment_line = difflines[index]
+                i = index
+                while True:
+                    if not difflines[i - 1].startswith("-"):
+                        break
+                    difflines[i] = difflines[i - 1]
+                    i -= 1
+                difflines[i] = comment_line
+        return "\n".join(difflines)
