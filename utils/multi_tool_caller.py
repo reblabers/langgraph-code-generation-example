@@ -2,7 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import chain
 
 
-class SingleToolCaller:
+class MultiToolCaller:
     def __init__(self, llm, tools):
         self.llm = llm
         self.tools = tools

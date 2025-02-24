@@ -1,4 +1,4 @@
-from utils.tool_caller import SingleToolCaller
+from utils.single_tool_caller import SingleToolCaller
 from tools.output_equivalence import output_equivalence
 from langchain_core.prompts import ChatPromptTemplate
 from .state import GlobalState
@@ -23,15 +23,27 @@ class LocalState(TypedDict):
 
 class EquivalenceDetectorNode:
     def __init__(self, llm):
-        self.tools = [output_equivalence]
-        self.caller = SingleToolCaller(llm, self.tools)
+        self.caller = SingleToolCaller(llm, output_equivalence)
         self.prompt_template = ChatPromptTemplate.from_messages([
             ("system", dedent("""
-I'm going to show you a Kotlin class and a set of changes made to it. Here is the original Kotlin class: '''source_code'''. Here is the set of changes applied to the class: '''diff'''.  
-INSTRUCTION: If applying these changes results in a class that behaves exactly the same as the original, Output 'True'. However, if the changes are not equivalent, Output 'False', and explain how execution of the original version can produce a different behavior compared to the modified version.
-""").strip()),
-            ("user", "<source_code>{source_code}</source_code>"),
-            ("user", "<diff>{diff}</diff>"),
+I'm going to show you a Kotlin class and a set of changes made to it. Here is the original Kotlin class: 'SOURCE_CODE'. Here is the set of changes applied to the class: 'DIFF'.
+
+INSTRUCTION:
+If applying these changes results in a class that behaves exactly the same as the original, Output 'True'. \
+However, if the changes are not equivalent, Output 'False', and explain how execution of the original version can produce a different behavior compared to the modified version.
+            """).strip()),
+            ("user", dedent("""
+SOURCE_CODE:
+```kotlin
+{source_code}
+```
+            """).strip()),
+            ("user", dedent("""
+DIFF:
+```diff
+{diff}
+```
+            """).strip()),
         ])
     
     async def process(self, global_state: GlobalState) -> GlobalState:

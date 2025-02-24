@@ -1,4 +1,4 @@
-from langchain_aws import ChatBedrock
+from langchain_aws import ChatBedrockConverse
 from .credentials import Credentials
 
 CLAUDE_3_HAIKU = "us.anthropic.claude-3-haiku-20240307-v1:0"
@@ -10,11 +10,11 @@ def get_bedrock_llm(
         model_id:str = CLAUDE_3_5_SONNET,
         region_name:str="us-east-1",
 ):
-    return ChatBedrock(
+    return ChatBedrockConverse(
         model_id=model_id,
         aws_access_key_id=credentials.access_key_id,
         aws_secret_access_key=credentials.secret_access_key,
         aws_session_token=credentials.session_token,
         region_name=region_name,
-        model_kwargs={"temperature": 0.0},
+        # model_kwargs={"temperature": 0.0},
     )

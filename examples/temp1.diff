@@ -1,0 +1,206 @@
+--- original.kt
++++ mutated.kt
+@@ -30,11 +30,14 @@
+      * @param qualifiedMethodName 関数の完全修飾名 (KtFunctionのみ)
+      * @return 見つかった関数、見つからない場合はnull
+      */
++    // MUTANT <START>
+     fun findKtFunction(qualifiedMethodName: String): KtFunction? {
+         val targetFqName = FqName(qualifiedMethodName)
+         return ktFiles
+-            .filter { targetFqName.isOrInsideOf(it.packageFqName) }
++            // Bug: Removed package filtering, which may return functions from wrong packages
++            // .filter { targetFqName.isOrInsideOf(it.packageFqName) }
+             .flatMap { it.readonly.functionList() }
++            // Bug: Using == instead of equals() for string comparison
+             .find { toQualifiedName(it) == qualifiedMethodName }
+     }
++    // MUTANT <END>
+ 
+@@ -43,11 +46,14 @@
+      * @param qualifiedMethodName メソッドの完全修飾名 (JavaMethodのみ)
+      * @return 見つかったメソッド、見つからない場合はnull
+      */
++    // MUTANT <START>
+     fun findJavaMethod(qualifiedMethodName: String): JavaMethod? {
+         val targetFqName = FqName(qualifiedMethodName)
+         return javaClasses
+-            .filter { targetFqName.isOrInsideOf(FqName(it.packageName)) }
++            // Bug: Removed package filtering
++            // .filter { targetFqName.isOrInsideOf(FqName(it.packageName)) }
+             .flatMap { it.methods }
++            // Bug: Case-sensitive comparison instead of case-insensitive
+             .find { it.fullName == qualifiedMethodName }
+     }
++    // MUTANT <END>
+ 
+@@ -57,6 +63,7 @@
+      * @param javaMethod 検索対象の Java メソッド
+      * @return 見つかった Kotlin 関数、見つからない場合は null
+      */
++    // MUTANT <START>
+     fun findKtFunction(javaMethod: JavaMethod): KtFunction? {
+         val functions =
+             ktFunctions
+@@ -64,7 +71,8 @@
+                 .toList()
+ 
+         if (functions.size == 1) {
+-            return functions.single()
++            // Bug: Always return null even if we found a single matching function
++            return null
+         }
+ 
+         if (functions.isNotEmpty()) {
+@@ -76,6 +84,7 @@
+ 
+         return null
+     }
++    // MUTANT <END>
+ 
+@@ -85,6 +94,7 @@
+      * @param ktFunction 検索対象の Kotlin 関数
+      * @return 見つかった Java メソッド、見つからない場合は null
+      */
++    // MUTANT <START>
+     fun findJavaMethod(ktFunction: KtFunction): JavaMethod? {
+         val methods = javaMethods.filter { it.name == ktFunction.name }
+ 
+@@ -94,14 +104,16 @@
+ 
+         if (methods.isNotEmpty()) {
+             val targetParameterTypes = toStringsFromKt(ktFunction.valueParameters)
+-            methods
++            // Bug: Return first method instead of matching parameter types
++            return methods.first()
++            /* methods
+                 .find { toStringsFromJava(it.parameterTypes) == targetParameterTypes }
+-                ?.let { return it }
++                ?.let { return it } */
+         }
+ 
+         return null
+     }
+-
++    // MUTANT <END>
+     /**
+      * 指定された名前のクラスを検索します。
+      *
+@@ -118,11 +130,14 @@
+      * @param qualifiedClassName クラスの完全修飾名 (KtClass/JavaClass両対応)
+      * @return 見つかったクラス、見つからない場合はnull
+      */
++    // MUTANT <START>
+     fun findJavaClass(qualifiedClassName: String): JavaClass? {
+-        val targetClassName = qualifiedClassName.replace("$", ".")
+-        return javaClasses.find { it.name.replace("$", ".") == targetClassName }
++        // Bug: Don't replace $ with . in class names, causing inner class lookups to fail
++        // val targetClassName = qualifiedClassName.replace("$", ".")
++        return javaClasses.find { it.name == qualifiedClassName }
+     }
++    // MUTANT <END>
+ 
+     /**
+      * 指定された Java クラスを検索します。
+      *
+      * @param javaClazz 検索対象の Java クラス
+      * @return 見つかったクラス、見つからない場合はnull
+      */
++    // MUTANT <START>
+     fun findKtClass(javaClazz: JavaClass): KtClass? {
+-        val targetClassName = javaClazz.name.replace("$", ".")
++        // Bug: Don't handle inner classes correctly
++        val targetClassName = javaClazz.name
+         return ktClassesOrInterfaces.find {
+             it.fqName?.asString() == targetClassName
+         }
+     }
++    // MUTANT <END>
+ 
+     /**
+      * 指定された Kotlin クラスを検索します。
+      *
+      * @param ktClass 検索対象の Kotlin クラス
+      * @return 見つかったクラス、見つからない場合はnull
+      */
++    // MUTANT <START>
+     fun findJavaClass(ktClass: KtClass): JavaClass? {
+         val targetClassName = ktClass.fqName?.asString() ?: return null
+-        return javaClasses.find { it.name.replace("$", ".") == targetClassName }
++        // Bug: Case-sensitive comparison and no inner class handling
++        return javaClasses.find { it.name == targetClassName }
+     }
++    // MUTANT <END>
+ 
+     /**
+      * 指定された名前のプロパティを検索します。
+      *
+      * @param qualifiedPropertyName プロパティの完全修飾名 (KtClass/JavaClass両対応)
+      * @return 見つかったプロパティ、見つからない場合はnull
+      */
++    // MUTANT <START>
+     fun findKtParameter(qualifiedPropertyName: String): KtParameter? {
+-        val targetFqName = FqName(qualifiedPropertyName.replace("$", "."))
++        // Bug: Don't handle inner classes and don't compare FQNames
++        val targetFqName = FqName(qualifiedPropertyName)
+         return findKtClass(targetFqName.parent().asString())?.let { ktClass ->
+-            return ktClass.getValueParameters().firstOrNull { it.fqName == targetFqName }
++            return ktClass.getValueParameters().firstOrNull { it.name == targetFqName.shortName().asString() }
+         }
+     }
++    // MUTANT <END>
+ 
+     /**
+      * 指定された完全修飾名の Kotlin プロパティを検索します。
+      *
+      * @param qualifiedPropertyName プロパティの完全修飾名 (KtClass/JavaClass両対応)
+      * @return 見つかったプロパティを [KtProperty] として返します。見つからない場合は null を返します。
+      */
++    // MUTANT <START>
+     fun findKtProperty(qualifiedPropertyName: String): KtProperty? {
+         val targetFqName = FqName(qualifiedPropertyName)
+-        return findKtClass(targetFqName.parent().asString())?.let { ktClass ->
++        // Bug: Return first property without checking name
++        findKtClass(targetFqName.parent().asString())?.let { ktClass ->
+             val properties = ktClass.getProperties()
+-            return properties.firstOrNull { it.fqName == targetFqName }
++            return properties.firstOrNull()
+         }
++        return null
+     }
++    // MUTANT <END>
+ 
++    // MUTANT <START>
+     fun findJavaConstructor(qualifiedMethodName: String): JavaConstructor? {
+         val targetFqName = FqName(qualifiedMethodName)
+         return javaClasses
+-            .filter { targetFqName.isOrInsideOf(FqName(it.packageName)) }
++            // Bug: No package filtering
+             .flatMap { it.constructors }
+-            .find { it.fullName == qualifiedMethodName }
++            // Bug: Just return first constructor
++            .firstOrNull()
+     }
++    // MUTANT <END>
+ 
++    // MUTANT <START>
+     fun findKtConstructor(qualifiedPropertyName: String): KtConstructor<*>? {
+         val javaConstructor = findJavaConstructor(qualifiedPropertyName)
+         if (javaConstructor == null) {
+             return null
+         }
+ 
+-        val targetParameterTypes = toStringsFromJava(javaConstructor.parameterTypes)
++        // Bug: Ignore parameter types matching
+         findKtClass(javaConstructor.owner)?.let { ktClass ->
+-            ktClass.constructors()
+-                .find { toStringsFromKt(it.valueParameters) == targetParameterTypes }
+-                ?.let { return it }
++            // Bug: Return first constructor without parameter matching
++            return ktClass.constructors().firstOrNull()
+         }
+ 
+         return null
+     }
++    // MUTANT <END>
+ }

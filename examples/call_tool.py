@@ -6,7 +6,7 @@ from typing import Annotated
 from langchain_core.runnables import chain
 from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from tools.output_diff import create_mutation_diff
+from tools.apply_to_file import create_mutation_diff
 from utils.diff_applier import apply_diff_to_file
 
 credentials = get_default_credentials()
