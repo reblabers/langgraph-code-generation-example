@@ -287,4 +287,69 @@ z = 3
 y = 2
 z = 300
 """
-        assert result == expected2 
+        assert result == expected2
+
+    def test_mutant_start_without_end(self):
+        """STARTタグのみで終了タグがない場合、最後までが変更対象として扱われることを確認"""
+        source = """def process(data):
+    x = 1
+    y = 2
+    z = 3
+    return x + y + z
+"""
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,5 @@
+ def process(data):
+     x = 1
++    // MUTANT <START>
+-    y = 2
+-    z = 3
+-    return x + y + z
++    y = 20
++    z = 30
++    return x * y * z
+"""
+
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        expected = """def process(data):
+    x = 1
+    y = 20
+    z = 30
+    return x * y * z
+"""
+        assert result == expected
+
+        # 複数のSTARTタグがある場合、最後のSTARTタグから最後までが対象
+        diff_multiple = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,5 @@
+ def process(data):
++    // MUTANT <START>
+-    x = 1
++    x = 10
++    // MUTANT <END>
+     y = 2
++    // MUTANT <START>
+-    z = 3
+-    return x + y + z
++    z = 30
++    return x * y * z
+"""
+
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff_multiple)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        expected_multiple = """def process(data):
+    x = 10
+    y = 2
+    z = 30
+    return x * y * z
+"""
+        assert result == expected_multiple 

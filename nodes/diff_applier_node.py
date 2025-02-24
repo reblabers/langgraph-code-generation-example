@@ -84,28 +84,25 @@ class DiffApplierNode:
 
     def _extract_diff_mutants(self, diff: str) -> List[str]:
         """diffから各MUTANTブロックのdiffのリストを生成します。
+        各MUTANTブロックは、STARTタグから次のSTART/END/EOFまでを対象とします。
 
         Args:
             diff (str): 元のdiffテキスト
 
         Returns:
-            List[str]: 各MUTANTブロックに対応するdiffのリスト
-        
-        Raises:
-            Exception: MUTANT <START>とMUTANT <END>の数が一致しない場合
-            Exception: ネストされたMUTANTブロックが検出された場合
-            Exception: MUTANTブロックの範囲が無効な場合
+            List[str]: 各MUTANTブロックに対応するdiffのリスト。
+                      各ブロックは以下の規則で生成されます：
+                      - STARTタグを基準に、次のSTART/END/EOFまでを対象とする
+                      - 他のMUTANTブロックは全てSKIPに置換される
+                      - 変更前のコードが先に出力され、その後に変更後のコードが出力される
         """
         # MUTANTタグの数をチェック
-        mutant_start_count = diff.count("MUTANT <START>")
-        # if mutant_start_count != mutant_end_count:
-        #     raise Exception(f"MUTANT <START>とMUTANT <END>の数が一致しません: start={mutant_start_count}, end={mutant_end_count}")
-        
-        if mutant_start_count == 0:
+        if diff.count("MUTANT <START>") == 0:
             return []
 
         # MUTANTブロックの位置を特定
         def find_all_indexes(text: str, pattern: str, start: int = 0) -> List[int]:
+            """文字列内の全てのパターンの位置を取得します"""
             indexes = []
             while True:
                 index = text.find(pattern, start)
@@ -115,61 +112,53 @@ class DiffApplierNode:
                 start = index + len(pattern)
             return indexes
 
+        # 全てのSTARTタグの位置を取得
         start_indexes = find_all_indexes(diff, "MUTANT <START>")
-        # end_indexes = [i + len("MUTANT <END>") for i in find_all_indexes(diff, "MUTANT <END>")]
-
         print(f"start_indexes: {start_indexes}")
-        # print(f"end_indexes: {end_indexes}")
 
+        # 各STARTタグに対応する終了位置と終了タイプを特定
         end_indexes = []
-        # MUTANTブロックの範囲をチェック
-        for i in range(len(start_indexes)):
-            start = start_indexes[i]
+        for start in start_indexes:
             current_pos = start + len("MUTANT <START>")
-            
-            # start以降のMUTANT <START>, MUTANT <END>, EOFを探す
             next_start = diff.find("MUTANT <START>", current_pos)
             next_end = diff.find("MUTANT <END>", current_pos)
-            
-            # 次のシンボルを決定
+
+            # 終了タイプを決定（END/START/EOF）
             if next_start == -1 and next_end == -1:
-                # EOFで終了
+                # 次のタグが見つからない場合はEOFまで
                 end = len(diff)
-                end_indexes.append((end, "EOF"))
+                end_type = "EOF"
             elif next_start == -1 or (next_end != -1 and next_end < next_start):
-                # ENDで終了
+                # ENDタグが先に見つかった場合
                 end = next_end + len("MUTANT <END>")
-                end_indexes.append((end, "END"))
+                end_type = "END"
             else:
-                # STARTで終了
+                # STARTタグが先に見つかった場合
                 end = next_start + len("MUTANT <START>")
-                end_indexes.append((end, "START"))
+                end_type = "START"
+            
+            end_indexes.append((end, end_type))
 
-        # 各MUTANTブロックに対してfinal_diffを生成
+        # 各MUTANTブロックのdiffを生成
         final_diffs = []
-        for i in range(len(start_indexes)):
-            start = start_indexes[i]
-            end, end_type = end_indexes[i]
-
-            # 前後のコンテキストを保持しつつ、他のMUTANTブロックをSKIPに置換
+        for start, (end, end_type) in zip(start_indexes, end_indexes):
+            # 前のブロックをSKIPに置換
             before = diff[:start].replace("MUTANT <START>", "MUTANT <SKIP>").replace("MUTANT <END>", "MUTANT <SKIP>")
-            
-            # 終了位置のシンボルに合わせて書き換え方を変える
+
+            # 終了タイプに応じてブロックを処理
             if end_type == "END":
-                # ENDで終了 - そのまま、他をSKIPに置換
+                # ENDで終了する場合は、そのまま使用
                 mutant = diff[start:end]
-                after = diff[end:].replace("MUTANT <START>", "MUTANT <SKIP>").replace("MUTANT <END>", "MUTANT <SKIP>")
             elif end_type == "START":
-                # STARTで終了 - ENDを追加
-                mutant = diff[start:end]
-                # mutantの最後7文字を<END>に変換
-                mutant = mutant[:-7] + "<END>"
-                after = diff[end:].replace("MUTANT <START>", "MUTANT <SKIP>").replace("MUTANT <END>", "MUTANT <SKIP>")
+                # STARTで終了する場合は、STARTをENDに置換
+                mutant = diff[start:end-len("MUTANT <START>")] + "MUTANT <END>"
             else:  # EOF
-                # EOFで終了 - そのまま
+                # EOFで終了する場合は、残り全てを使用
                 mutant = diff[start:]
-                after = ""
-            
+
+            # 後続のブロックをSKIPに置換
+            after = diff[end:].replace("MUTANT <START>", "MUTANT <SKIP>").replace("MUTANT <END>", "MUTANT <SKIP>")
+
             final_diffs.append(before + mutant + after)
 
         return final_diffs
