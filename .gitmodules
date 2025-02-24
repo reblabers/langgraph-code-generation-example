@@ -1,0 +1,3 @@
+[submodule "repositories/kotlin-tracer-mcp"]
+	path = repositories/kotlin-tracer-mcp
+	url = https://github.com/reblabers/kotlin-tracer-mcp
