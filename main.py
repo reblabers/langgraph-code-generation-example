@@ -46,7 +46,7 @@ async def main():
             reason=fault['reason'],
         ))
 
-    with open("result.json", "w") as f:
+    with open("results/last.json", "w") as f:
         json.dump(records, f, indent=4)
 
 
