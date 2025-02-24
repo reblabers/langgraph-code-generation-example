@@ -50,7 +50,7 @@ async def main():
         ))
 
         # デバッグ用に結果を表示
-        print("---")
+        print("###")
         print("source_code_path:", source_code_path)
         print("is_equivalent:", is_equivalent)
         print("diff:")

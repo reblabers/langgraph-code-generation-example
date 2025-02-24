@@ -121,17 +121,16 @@ class DiffApplier:
         diff_lines = diff.split("\n")
 
         while diff_lines:
-            line = diff_lines[0]
+            line = diff_lines[0].strip()
             if line.startswith("---") or line.startswith("+++") or line.startswith("@@@"):
                 break
-            diff_lines.pop()
+            diff_lines.pop(0)
         
         while diff_lines:
-            line = diff_lines[-1]
-            print(line)
-            if line.strip():
+            line = diff_lines[-1].strip()
+            if line and line != "```":
                 break
-            diff_lines = diff_lines[:-1]
+            diff_lines.pop(-1)
 
         try:
             self._confident = False

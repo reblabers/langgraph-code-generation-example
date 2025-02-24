@@ -45,6 +45,10 @@ class DiffApplierNode:
             # リポジトリをクリーン
             self.repository.clean()
 
+            # import pprint
+            # pprint.pprint(source_code_path)
+            # pprint.pprint(diff_mutant)
+            
             mutated_path = apply_diff_to_file_for_mutant(
                 source_path=source_code_path,
                 diff=diff_mutant,
@@ -55,17 +59,20 @@ class DiffApplierNode:
                 continue
 
             # コードに適用
-            shutil.copy(mutated_path, state["source_code_path"])
+            shutil.copy(mutated_path, source_code_path)
 
             try:
                 # テストを実行. テストが失敗したら終了
                 self.repository.test()
-
-                # フォーマットを実行    
-                self.repository.format()
             except Exception as e:
                 print(f"SKIPPED: {e}")
                 continue
+
+            try:
+                # フォーマットを実行
+                self.repository.format()
+            except Exception as e:
+                pass
 
             # 変更後のソースコードのハッシュ値を記録
             mutated_code = mutated_path.read_text()
