@@ -21,7 +21,7 @@ async def main():
     )
 
     result = await graph.ainvoke(global_state)
-    print(f"is_equivalent: {result['is_equivalent']}")
+    print(f"is_equivalent: {result.get('is_equivalent')}")
     print(f"reason_not_equivalent: {result.get('reason_not_equivalent')}")
 
 

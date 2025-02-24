@@ -1,6 +1,4 @@
-from typing import TypedDict, Annotated, Optional
-from dataclasses import dataclass
-from typing_extensions import NotRequired
+from typing import TypedDict, Optional, List
 from pathlib import Path
 
 
@@ -9,11 +7,14 @@ class GlobalState(TypedDict):
     test_code_path: Optional[Path] = None
     source_code: Optional[str] = None
     test_code: Optional[str] = None
+    
     diff: Optional[str] = None
-    mutated_code_path: Optional[Path] = None
-    mutated_code: Optional[str] = None
-    is_equivalent: Optional[bool] = None
-    reason_not_equivalent: Optional[str] = None
+    faults: Optional[List[str]] = None
+
+    # mutated_code_path: Optional[Path] = None
+    # mutated_code: Optional[str] = None
+    # is_equivalent: Optional[bool] = None
+    # reason_not_equivalent: Optional[str] = None
 
 
 def initial_global_state(source_code_path: Path, test_code_path: Path) -> GlobalState:
