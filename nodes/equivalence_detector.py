@@ -54,6 +54,11 @@ SOURCE_CODE:
         source_code = state["source_code"]
         diff_faults = state["diff_faults"]
 
+        if not diff_faults:
+            return {
+                "faults": [],
+            }
+
         # Format diffs with index numbers
         diffs_with_index = "\n\n".join([
             f"DIFF #{i}:\n```diff\n{diff}\n```"

@@ -72,6 +72,7 @@ class DiffApplier:
         # 4. 削除行（-で始まる行）の処理
         #    - MUTANTモードでMUTANT範囲内、または通常モードの場合のみ処理
         #    - 元ファイルから対応する行をスキップ
+        #       - 一致しない場合は、元ファイルの行をそのまま書き込む
         elif (mark == "-" and (self._is_normal_mode() or self._mutating)):
             if self._confident:
                 next(file)
@@ -79,8 +80,13 @@ class DiffApplier:
                 while True:
                     original_line = next(file)
                     if original_line.strip().startswith(diffline.strip()):
+                        if 5 <= len(original_line.strip()):
+                            # 5文字以上の行で一致した場合は信頼する
+                            self._confident = True
                         break
-                    
+                    else:
+                        mutated_file.write(original_line)
+
         # 5. コンテキスト行（変更なしの行）の処理
         #    - 元ファイルから対応する行を探して書き込み
         #    - 見つかった場合はconfidentをTrueに設定
@@ -88,7 +94,9 @@ class DiffApplier:
             while True:
                 original_line = next(file)
                 if original_line.strip().startswith(diffline.strip()):
-                    self._confident = True
+                    if not self._confident and 5 <= len(original_line.strip()):
+                        # 5文字以上の行で一致した場合は信頼する
+                        self._confident = True
                     mutated_file.write(original_line)
                     break
                 else:
