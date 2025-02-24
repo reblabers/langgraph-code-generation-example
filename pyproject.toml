@@ -10,5 +10,6 @@ dependencies = [
     "langchain-aws>=0.2.13",
     "langchain-community>=0.3.18",
     "langgraph>=0.2.74",
+    "pytest>=8.3.4",
     "python-dotenv>=1.0.1",
 ]
