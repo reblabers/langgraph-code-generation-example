@@ -91,49 +91,55 @@ class DiffApplierNode:
         
         Raises:
             Exception: MUTANT <START>とMUTANT <END>の数が一致しない場合
+            Exception: ネストされたMUTANTブロックが検出された場合
+            Exception: MUTANTブロックの範囲が無効な場合
         """
-        # diffにある `MUTANT <START>` と `MUTANT <END>` の間の行のdiffだけを適用
+        # MUTANTタグの数をチェック
         mutant_start_count = diff.count("MUTANT <START>")
         mutant_end_count = diff.count("MUTANT <END>")
         if mutant_start_count != mutant_end_count:
             raise Exception(f"MUTANT <START>とMUTANT <END>の数が一致しません: start={mutant_start_count}, end={mutant_end_count}")
 
-        start = 0
-        start_indexes = []
-        length = len("MUTANT <START>")
-        for _ in range(mutant_start_count):
-            index = diff.find("MUTANT <START>", start)
-            start_indexes.append(index)
-            start = index + length
+        if mutant_start_count == 0:
+            return []
 
-        start = 0
-        end_indexes = []
-        length = len("MUTANT <END>")
-        for _ in range(mutant_end_count):
-            index = diff.find("MUTANT <END>", start)
-            end_indexes.append(index + length)
-            start = index + length
+        # MUTANTブロックの位置を特定
+        def find_all_indexes(text: str, pattern: str, start: int = 0) -> List[int]:
+            indexes = []
+            while True:
+                index = text.find(pattern, start)
+                if index == -1:
+                    break
+                indexes.append(index)
+                start = index + len(pattern)
+            return indexes
+
+        start_indexes = find_all_indexes(diff, "MUTANT <START>")
+        end_indexes = [i + len("MUTANT <END>") for i in find_all_indexes(diff, "MUTANT <END>")]
 
         print(f"start_indexes: {start_indexes}")
         print(f"end_indexes: {end_indexes}")
 
-        mutant_count = mutant_start_count
-        for i in range(mutant_count):
-            if start_indexes[i] > end_indexes[i]:
-                print("invalid range: start={start}, end={end}")
-
-            if i + 1 < mutant_count and end_indexes[i] > start_indexes[i + 1]:
-                raise Exception("ネストされたMUTANTブロックは許可されていません")
-
-        final_diffs = []
-        for i in range(mutant_start_count):
+        # MUTANTブロックの範囲をチェック
+        for i in range(len(start_indexes)):
             start = start_indexes[i]
             end = end_indexes[i]
 
-            if end < start:
-                print("invalid range: start={start}, end={end}")
-                break
+            # 開始位置が終了位置より後にある場合
+            if start > end:
+                raise Exception(f"MUTANTブロックの範囲が無効です: start={start}, end={end}")
 
+            # ネストされたMUTANTブロックをチェック
+            if i + 1 < len(start_indexes) and end > start_indexes[i + 1]:
+                raise Exception("ネストされたMUTANTブロックは許可されていません")
+
+        # 各MUTANTブロックに対してfinal_diffを生成
+        final_diffs = []
+        for i in range(len(start_indexes)):
+            start = start_indexes[i]
+            end = end_indexes[i]
+
+            # 前後のコンテキストを保持しつつ、他のMUTANTブロックをSKIPに置換
             before = diff[:start].replace("MUTANT <START>", "MUTANT <SKIP>").replace("MUTANT <END>", "MUTANT <SKIP>")
             mutant = diff[start:end]
             after = diff[end:].replace("MUTANT <START>", "MUTANT <SKIP>").replace("MUTANT <END>", "MUTANT <SKIP>")

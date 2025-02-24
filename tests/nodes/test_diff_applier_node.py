@@ -102,7 +102,7 @@ MUTANT <START>
             diff_applier_node._extract_final_diffs(diff)
         assert "MUTANT <START>とMUTANT <END>の数が一致しません" in str(exc_info.value)
 
-    def test_extract_final_diffs_invalid_range(self, diff_applier_node, capfd):
+    def test_extract_final_diffs_invalid_range(self, diff_applier_node):
         """開始位置が終了位置より後にある場合のテスト"""
         diff = """--- a/test.py
 +++ b/test.py
@@ -112,10 +112,9 @@ MUTANT <END>
 +def hello_world():
 MUTANT <START>"""
 
-        result = diff_applier_node._extract_final_diffs(diff)
-        assert len(result) == 0
-        captured = capfd.readouterr()
-        assert "invalid range" in captured.out
+        with pytest.raises(Exception) as exc_info:
+            diff_applier_node._extract_final_diffs(diff)
+        assert "MUTANTブロックの範囲が無効です" in str(exc_info.value)
 
     def test_extract_final_diffs_empty_mutant(self, diff_applier_node):
         """空のMUTANTブロックを含むdiffのテスト"""
