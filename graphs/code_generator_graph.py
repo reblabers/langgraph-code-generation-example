@@ -32,4 +32,8 @@ def build_code_generator_graph(llm, repository: Repository) -> StateGraph:
 
 
 def initial_state(source_code_path: Path, test_code_path: Path) -> GlobalState:
+    if not source_code_path.exists():
+        raise FileNotFoundError(f"Source code file not found: {source_code_path}")
+    if not test_code_path.exists():
+        raise FileNotFoundError(f"Test code file not found: {test_code_path}")  
     return initial_global_state(source_code_path, test_code_path)

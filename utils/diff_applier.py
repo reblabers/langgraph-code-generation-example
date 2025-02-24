@@ -48,11 +48,15 @@ class DiffApplier:
             return
 
         # 2. 空行やDIFFのメタ情報行（---/+++）は無視
-        if not diffline.strip() or diffline.startswith("---") or diffline.startswith("+++"):
+        if diffline.startswith("---") or diffline.startswith("+++"):
             return
 
-        mark = diffline[0]
-        diffline = diffline[1:].rstrip()
+        if diffline.strip():
+            mark = diffline[0]
+            diffline = diffline[1:].rstrip()
+        else:
+            mark = " "
+            diffline = ""
 
         # 3. 追加行（+で始まる行）の処理
         #    - MUTANTモードの場合、MUTANT範囲のみ処理
@@ -115,7 +119,20 @@ class DiffApplier:
         """
         temp_file_path = self._create_temp_file()
         diff_lines = diff.split("\n")
+
+        while diff_lines:
+            line = diff_lines[0]
+            if line.startswith("---") or line.startswith("+++") or line.startswith("@@@"):
+                break
+            diff_lines.pop()
         
+        while diff_lines:
+            line = diff_lines[-1]
+            print(line)
+            if line.strip():
+                break
+            diff_lines = diff_lines[:-1]
+
         try:
             self._confident = False
             self._mutating = None if not mutant_mode else False

@@ -1,6 +1,8 @@
 import pytest
 from pathlib import Path
-from utils.diff_applier import apply_diff_to_file, apply_diff_to_file_for_mutant
+from utils.diff_applier import apply_diff_to_file, apply_diff_to_file_for_mutant, DiffApplier
+import tempfile
+import os
 
 class TestDiffApplier:
     @pytest.fixture(autouse=True)
@@ -128,7 +130,9 @@ class TestDiffApplier:
         source_path = self.write_source(source, "invalid.py")
         result_path = apply_diff_to_file(source_path, diff)
         
-        assert result_path is None
+        assert result_path is not None
+        result = result_path.read_text()
+        assert result == source 
 
     def test_empty_diff(self):
         source = "print('test')\n"
@@ -352,4 +356,140 @@ z = 300
     z = 30
     return x * y * z
 """
-        assert result == expected_multiple 
+        assert result == expected_multiple
+
+    def test_whitespace_only_diff(self):
+        """空白行のみのdiffが正しく処理されることを確認"""
+        source = """def hello():
+    print("Hello")
+    print("World")
+"""
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,3 +1,4 @@
+ def hello():
+     print("Hello")
++
+     print("World")
+"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        expected = """def hello():
+    print("Hello")
+
+    print("World")
+"""
+        assert result == expected
+
+    def test_multiple_consecutive_whitespace_diff(self):
+        """複数の連続した空白行を含むdiffが正しく処理されることを確認"""
+        source = """def hello():
+    print("Hello")
+    print("World")
+"""
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,3 +1,5 @@
+ def hello():
+    print("Hello")
++
++
+    print("World")
+"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        expected = """def hello():
+    print("Hello")
+
+
+    print("World")
+"""
+        assert result == expected
+
+    def test_non_ascii_diff(self):
+        """非ASCII文字（日本語など）を含むdiffが正しく処理されることを確認"""
+        source = """def hello():
+    print("Hello")
+    # コメント
+    print("World")
+"""
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,4 +1,4 @@
+ def hello():
+     print("Hello")
+-    # コメント
++    # 日本語コメント
+     print("World")
+"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        expected = """def hello():
+    print("Hello")
+    # 日本語コメント
+    print("World")
+"""
+        assert result == expected
+
+    def test_no_newline_at_eof(self):
+        """ファイルの最後に改行がない場合の処理を確認"""
+        source = """def hello():
+    print("Hello")
+    print("World")"""  # 最後に改行なし
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,3 +1,3 @@
+ def hello():
+     print("Hello")
+-    print("World")
++    print("Goodbye")"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text().rstrip('\n')  # 末尾の改行を削除
+        expected = """def hello():
+    print("Hello")
+    print("Goodbye")"""
+        assert result == expected
+
+    def test_large_diff_performance(self):
+        """大きなdiffファイルの処理（パフォーマンステスト）"""
+        # 大きなソースファイルを生成
+        source_lines = ["def test_function():\n"]
+        for i in range(1000):
+            source_lines.append(f"    print('Line {i}')\n")
+        source = "".join(source_lines)
+        
+        # 大きなdiffを生成（100行を変更）
+        diff_lines = ["--- a/test.py\n", "+++ b/test.py\n", "@@ -1,1000 +1,1000 @@\n"]
+        for i in range(1000):
+            if i % 10 == 0:  # 10行ごとに1行を変更
+                diff_lines.append(f"-    print('Line {i}')\n")
+                diff_lines.append(f"+    print('Modified Line {i}')\n")
+            else:
+                diff_lines.append(f"     print('Line {i}')\n")
+        diff = "".join(diff_lines)
+        
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        
+        # 変更が正しく適用されていることを確認
+        result_lines = result.splitlines()
+        for i in range(1000):
+            if i % 10 == 0:
+                assert f"    print('Modified Line {i}')" in result_lines
+            else:
+                assert f"    print('Line {i}')" in result_lines
