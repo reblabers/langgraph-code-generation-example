@@ -2,6 +2,12 @@ from typing import TypedDict, Optional, List
 from pathlib import Path
 
 
+class Fault(TypedDict):
+    diff: str
+    is_equivalent: bool
+    reason: Optional[str] = None
+
+
 class GlobalState(TypedDict):
     source_code_path: Optional[Path] = None
     test_code_path: Optional[Path] = None
@@ -9,12 +15,7 @@ class GlobalState(TypedDict):
     test_code: Optional[str] = None
     
     diff: Optional[str] = None
-    faults: Optional[List[str]] = None
-
-    # mutated_code_path: Optional[Path] = None
-    # mutated_code: Optional[str] = None
-    # is_equivalent: Optional[bool] = None
-    # reason_not_equivalent: Optional[str] = None
+    diff_faults: Optional[List[str]] = None
 
 
 def initial_global_state(source_code_path: Path, test_code_path: Path) -> GlobalState:

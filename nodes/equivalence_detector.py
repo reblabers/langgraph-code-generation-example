@@ -5,19 +5,17 @@ from .state import GlobalState
 from typing_extensions import TypedDict
 from textwrap import dedent
 import json
-
+from typing import List
 
 class LocalState(TypedDict):
     source_code: str
-    diff: str
-    is_equivalent: bool
+    diff_faults: List[str]
 
     @staticmethod
     def load_from(global_state: GlobalState) -> "LocalState":
         return LocalState(
             source_code=global_state["source_code"],
-            diff=global_state["diff"],
-            is_equivalent=global_state["is_equivalent"],
+            diff_faults=global_state["diff_faults"],
         )
 
 
@@ -49,18 +47,24 @@ DIFF:
     async def process(self, global_state: GlobalState) -> GlobalState:
         state = LocalState.load_from(global_state)
 
-        result_json = await self.caller.call(
-            prompt_template=self.prompt_template,
-            invoke_args={
-                "source_code": state["source_code"],
-                "diff": state["diff"],
-            }
-        )
+        faults = []
+        for diff in state["diff_faults"]:
+            result_json = await self.caller.call(
+                prompt_template=self.prompt_template,
+                invoke_args={
+                    "source_code": state["source_code"],
+                    "diff": diff,
+                }
+            )
 
-        result = json.loads(result_json)
+            result = json.loads(result_json)
+            faults.append({
+                "diff": diff,
+                "is_equivalent": result["is_equivalent"],
+                "reason": result["reason"],
+            })
 
         return {
             **global_state,
-            "is_equivalent": result["is_equivalent"],
-            "reason_not_equivalent": result["reason"],
+            "faults": faults,
         }

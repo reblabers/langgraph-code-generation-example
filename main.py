@@ -21,8 +21,8 @@ async def main():
     )
 
     result = await graph.ainvoke(global_state)
-    print(f"is_equivalent: {result.get('is_equivalent')}")
-    print(f"reason_not_equivalent: {result.get('reason_not_equivalent')}")
+    import pprint
+    pprint.pprint(result['faults'])
 
 
 if __name__ == "__main__":

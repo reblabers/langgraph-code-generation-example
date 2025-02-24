@@ -25,9 +25,8 @@ def build_code_generator_graph(llm, repository: Repository) -> StateGraph:
 
     builder.add_edge(START, "diff_generator")
     builder.add_edge("diff_generator", "diff_applier")
-    builder.add_edge("diff_applier", END)
-    # builder.add_edge("diff_applier", "equivalence_detector")
-    # builder.add_edge("equivalence_detector", END)
+    builder.add_edge("diff_applier", "equivalence_detector")
+    builder.add_edge("equivalence_detector", END)
 
     return builder.compile()
 

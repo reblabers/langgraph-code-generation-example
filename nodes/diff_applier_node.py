@@ -5,7 +5,7 @@ from typing_extensions import TypedDict
 from utils.repository import Repository
 import shutil
 import hashlib
-
+import difflib
 
 class LocalState(TypedDict):
     source_code_path: Path
@@ -30,7 +30,8 @@ class DiffApplierNode:
         self.repository.clean()
 
         source_code_path = state["source_code_path"]
-        source_code_hash = hashlib.sha256(source_code_path.read_text().encode()).hexdigest()
+        source_code = source_code_path.read_text()
+        source_code_hash = hashlib.sha256(source_code.encode()).hexdigest()
 
         diff = state["diff"]
 
@@ -59,9 +60,14 @@ class DiffApplierNode:
         print(f"start_indexes: {start_indexes}")
         print(f"end_indexes: {end_indexes}")
 
+        diff_faults = []
         for i in range(mutant_start_count):
             start = start_indexes[i]
             end = end_indexes[i]
+
+            if end < start:
+                print("invalid range: start={start}, end={end}")
+                break
 
             before = diff[:start].replace("MUTANT <START>", "MUTANT <SKIP>").replace("MUTANT <END>", "MUTANT <SKIP>")
             mutant = diff[start:end]
@@ -95,17 +101,17 @@ class DiffApplierNode:
                 continue
 
             # 変更後のソースコードのハッシュ値を記録
-            mutated_code_hash = hashlib.sha256(mutated_path.read_text().encode()).hexdigest()
+            mutated_code = mutated_path.read_text()
+            mutated_code_hash = hashlib.sha256(mutated_code.encode()).hexdigest()
             if source_code_hash == mutated_code_hash:
                 print("SKIPPED: ソースコードが変更されていません")
                 continue
 
-            print("SUCCESS")
-            print(f"final_diff: {final_diff}")
-            print("########################")
+            # source_code_pathとmutated_pathのdiffを作り直す
+            new_diff = difflib.unified_diff(source_code.splitlines(), mutated_code.splitlines(), lineterm="")
+            diff_faults.append("\n".join(new_diff))
 
         return {
             **global_state,
-            # "mutated_code": mutated_code,
-            # "is_equivalent": source_code_hash == mutated_code_hash,
+            "diff_faults": diff_faults,
         }
