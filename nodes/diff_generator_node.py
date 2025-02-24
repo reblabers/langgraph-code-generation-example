@@ -31,7 +31,8 @@ class DiffGeneratorNode:
             ("system", dedent("""
 INSTRUCTION: Here is a Kotlin class and a test class with some unit tests for the class under test "CLASS_UNDER_TEST". "EXISTING_TEST_CLASS". \
 Write a new version of the class under test in which each method is replaced by a new version of that method that contains a typical bug. \
-Delimit the mutated part using the comment-pair `// MUTANT <START>` and `// MUTANT <END>` .
+Delimit the mutated part using the comment-pair `// MUTANT <START>` and `// MUTANT <END>`. \
+Each mutated part must not be equivalent in behavior before and after the change.
 
 Finally, output the diff snippet showing the changes relative to the original code in Unified Diff format.
             """).strip()),

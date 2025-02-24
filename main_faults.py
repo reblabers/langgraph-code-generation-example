@@ -33,21 +33,35 @@ async def main():
 
     result = await graph.ainvoke(global_state)
 
-    # import pprint
-    # pprint.pprint(result)
+    print("COMPLETED")
 
     # 結果をファイルに保存
     records = []
     for fault in result['faults']:
+        diff = fault['diff']
+        is_equivalent = fault['is_equivalent']
+        reason = fault['reason']    
+
         records.append(Record(
             source_code_path=str(source_code_path),
-            diff=fault['diff'],
-            is_equivalent=fault['is_equivalent'],
-            reason=fault['reason'],
+            diff=diff,
+            is_equivalent=is_equivalent,
+            reason=reason,
         ))
 
-    with open("results/last.json", "w") as f:
+        # デバッグ用に結果を表示
+        print("---")
+        print("source_code_path:", source_code_path)
+        print("is_equivalent:", is_equivalent)
+        print("diff:")
+        print(diff)
+        print("reason:")
+        print(reason)
+
+    with open("results/last_faults.json", "w") as f:
         json.dump(records, f, indent=4)
+    
+    print("SAVED")
 
 
 if __name__ == "__main__":
