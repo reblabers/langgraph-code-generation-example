@@ -140,3 +140,151 @@ class TestDiffApplier:
         assert result_path is not None
         result = result_path.read_text()
         assert result == source 
+
+    def test_multiple_mutant_blocks(self):
+        """複数のミュータントブロックがある場合、それぞれが独立して適用されることを確認"""
+        source = """def calculate(x, y):
+    result = x + y
+    print(result)
+    return result
+"""
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,4 +1,4 @@
+-def calculate(x, y):
++def calc(x, y):
++    // MUTANT <START>
+-    result = x + y
++    result = x - y
++    // MUTANT <END>
+     print(result)
++    // MUTANT <START>
+-    return result
++    return result * 2
++    // MUTANT <END>
+"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        expected = """def calculate(x, y):
+    result = x - y
+    print(result)
+    return result * 2
+"""
+        assert result == expected
+
+    def test_incomplete_mutant_tags(self):
+        """不完全なミュータントタグがある場合、その部分の変更は適用されないことを確認"""
+        source = """def process(data):
+    x = 1
+    y = 2
+    return x + y
+"""
+        # 開始タグのみ
+        diff1 = """--- a/test.py
++++ b/test.py
+@@ -1,4 +1,4 @@
+     // MUTANT <START>
+-    x = 1
++    x = 10
+"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff1)
+        assert result_path is None
+
+        # 終了タグのみ
+        diff2 = """--- a/test.py
++++ b/test.py
+@@ -1,4 +1,4 @@
+-    x = 1
++    x = 10
+     // MUTANT <END>
+"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff2)
+        assert result_path is None
+
+    def test_multi_line_mutant_changes(self):
+        """ミュータントブロック内で複数行の変更がある場合を確認"""
+        source = """def process_list(items):
+    result = []
+    for item in items:
+        result.append(item)
+    return result
+"""
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,5 +1,7 @@
+ def process_list(items):
++    // MUTANT <START>
+-    result = []
+-    for item in items:
+-        result.append(item)
++    result = set()
++    for i, item in enumerate(items):
++        if i % 2 == 0:
++            result.add(item)
++    // MUTANT <END>
+     return result
+"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff)
+        
+        assert result_path is not None
+        result = result_path.read_text()
+        expected = """def process_list(items):
+    result = set()
+    for i, item in enumerate(items):
+        if i % 2 == 0:
+            result.add(item)
+    return result
+"""
+        assert result == expected
+
+    def test_mutant_at_file_boundaries(self):
+        """ファイルの先頭や末尾でのミュータント適用を確認"""
+        source = """x = 1
+y = 2
+z = 3
+"""
+        # ファイル先頭のミュータント
+        diff1 = """--- a/test.py
++++ b/test.py
+@@ -1,1 +1,2 @@
++    // MUTANT <START>
+-x = 1
++x = 100
++    // MUTANT <END>
+ y = 2
+ z = 3"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff1)
+        assert result_path is not None
+        result = result_path.read_text()
+        expected1 = """x = 100
+y = 2
+z = 3
+"""
+        assert result == expected1
+
+        # ファイル末尾のミュータント
+        diff2 = """--- a/test.py
++++ b/test.py
+@@ -1,3 +1,4 @@
+ x = 1
+ y = 2
++    // MUTANT <START>
+-z = 3
++z = 300
++    // MUTANT <END>"""
+        source_path = self.write_source(source)
+        result_path = apply_diff_to_file_for_mutant(source_path, diff2)
+        assert result_path is not None
+        result = result_path.read_text()
+        expected2 = """x = 1
+y = 2
+z = 300
+"""
+        assert result == expected2 
