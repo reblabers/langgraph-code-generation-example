@@ -32,7 +32,7 @@ class DiffGeneratorNode:
 INSTRUCTION: Here is a Kotlin class and a test class with some unit tests for the class under test "CLASS_UNDER_TEST". "EXISTING_TEST_CLASS". \
 Write a new version of the class under test in which each method is replaced by a new version of that method that contains a typical bug. \
 Delimit the mutated part using the comment-pair `// MUTANT <START>` and `// MUTANT <END>`. \
-Each mutated part should represent a single bug, and to ensure that the program is compilable, removed lines are included within the mutated part.
+Each mutated part should represent a single bug, and the mutated part should be compilable even when applied individually.
                               
 Finally, output the diff snippet showing the changes relative to the original code in Unified Diff format.
             """).strip()),
