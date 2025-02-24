@@ -7,6 +7,7 @@ from textwrap import dedent
 import json
 from typing import List
 
+
 class LocalState(TypedDict):
     source_code: str
     diff_faults: List[str]
@@ -43,27 +44,33 @@ SOURCE_CODE:
 {diffs_with_index}
             """).strip()),
         ])
-    
+
     async def process(self, global_state: GlobalState) -> GlobalState:
         state = LocalState.load_from(global_state)
+        result = await self._process(state)
+        return {**global_state, **result}
+
+    async def _process(self, state: LocalState):
+        source_code = state["source_code"]
+        diff_faults = state["diff_faults"]
 
         # Format diffs with index numbers
         diffs_with_index = "\n\n".join([
             f"DIFF #{i}:\n```diff\n{diff}\n```"
-            for i, diff in enumerate(state["diff_faults"], 1)
+            for i, diff in enumerate(diff_faults, 1)
         ])
 
         result_json = await self.caller.call(
             prompt_template=self.prompt_template,
             invoke_args={
-                "source_code": state["source_code"],
+                "source_code": source_code,
                 "diffs_with_index": diffs_with_index,
             }
         )
-
         result = json.loads(result_json)
+
         faults = []
-        for i, diff in enumerate(state["diff_faults"]):
+        for i, diff in enumerate(diff_faults):
             fault_result = result["results"][i]
             faults.append({
                 "diff": diff,
@@ -72,6 +79,5 @@ SOURCE_CODE:
             })
 
         return {
-            **global_state,
             "faults": faults,
         }

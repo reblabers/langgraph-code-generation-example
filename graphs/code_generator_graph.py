@@ -13,13 +13,13 @@ def build_code_generator_graph(llm, repository: Repository) -> StateGraph:
     diff_applier = DiffApplierNode(repository)
     equivalence_detector = EquivalenceDetectorNode(llm)
 
-    from nodes.diff_constant_node import DiffConstantNode
-    diff_constant = DiffConstantNode()
+    # from nodes.diff_constant_node import DiffConstantNode
+    # diff_constant = DiffConstantNode()
 
     builder = StateGraph(GlobalState)
 
-    # builder.add_node("diff_generator", diff_generator.process)
-    builder.add_node("diff_generator", diff_constant.process)
+    builder.add_node("diff_generator", diff_generator.process)
+    # builder.add_node("diff_generator", diff_constant.process)
     builder.add_node("diff_applier", diff_applier.process)
     builder.add_node("equivalence_detector", equivalence_detector.process)
 

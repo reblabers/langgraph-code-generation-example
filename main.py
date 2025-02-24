@@ -1,4 +1,5 @@
 import asyncio
+import json
 from graphs.code_generator_graph import build_code_generator_graph, initial_state
 from utils.credentials import get_default_credentials
 from utils.llm import get_bedrock_llm
@@ -23,6 +24,10 @@ async def main():
     result = await graph.ainvoke(global_state)
     import pprint
     pprint.pprint(result['faults'])
+
+    # ファイルを保存
+    with open("result.json", "w") as f:
+        json.dump(result['faults'], f, indent=4)
 
 
 if __name__ == "__main__":

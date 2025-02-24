@@ -16,6 +16,7 @@ class GlobalState(TypedDict):
     
     diff: Optional[str] = None
     diff_faults: Optional[List[str]] = None
+    faults: Optional[List[Fault]] = None
 
 
 def initial_global_state(source_code_path: Path, test_code_path: Path) -> GlobalState:

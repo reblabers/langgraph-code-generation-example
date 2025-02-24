@@ -6,7 +6,8 @@ from utils.repository import Repository
 import shutil
 import hashlib
 import difflib
-from typing import List, Tuple
+from typing import List
+
 
 class LocalState(TypedDict):
     source_code_path: Path
@@ -26,7 +27,10 @@ class DiffApplierNode:
 
     async def process(self, global_state: GlobalState) -> GlobalState:
         state = LocalState.load_from(global_state)
+        result = await self._process(state)
+        return {**global_state, **result}
 
+    async def _process(self, state: LocalState):
         # リポジトリをクリーン
         self.repository.clean()
 
@@ -75,7 +79,6 @@ class DiffApplierNode:
             diff_faults.append("\n".join(new_diff))
 
         return {
-            **global_state,
             "diff_faults": diff_faults,
         }
 
@@ -98,7 +101,7 @@ class DiffApplierNode:
         mutant_end_count = diff.count("MUTANT <END>")
         if mutant_start_count != mutant_end_count:
             raise Exception(f"MUTANT <START>とMUTANT <END>の数が一致しません: start={mutant_start_count}, end={mutant_end_count}")
-
+        
         if mutant_start_count == 0:
             return []
 

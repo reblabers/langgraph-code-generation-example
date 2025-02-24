@@ -162,4 +162,47 @@ MUTANT <END>
         assert len(result) == 1
         assert result[0] == diff
         assert "# This is a context line" in result[0]
-        assert "# This is another context line" in result[0] 
+        assert "# This is another context line" in result[0]
+
+    def test_extract_diff_mutants_missing_end_tag(self, diff_applier_node):
+        """ENDタグがない場合、次のSTARTタグまでをMUTANTブロックとして扱うテスト"""
+        diff = """--- a/test.py
++++ b/test.py
+@@ -1,7 +1,7 @@
+MUTANT <START>
+-def hello():
++def hello_world():
+    print("Hello")
+MUTANT <START>
+-    return None
++    return "Hello"
+MUTANT <END>"""
+
+        expected1 = """--- a/test.py
++++ b/test.py
+@@ -1,7 +1,7 @@
+MUTANT <START>
+-def hello():
++def hello_world():
+    print("Hello")
+MUTANT <END>
+-    return None
++    return "Hello"
+MUTANT <SKIP>"""
+
+        expected2 = """--- a/test.py
++++ b/test.py
+@@ -1,7 +1,7 @@
+MUTANT <SKIP>
+-def hello():
++def hello_world():
+    print("Hello")
+MUTANT <START>
+-    return None
++    return "Hello"
+MUTANT <END>"""
+
+        result = diff_applier_node._extract_diff_mutants(diff)
+        assert len(result) == 2
+        assert result[0] == expected1
+        assert result[1] == expected2 

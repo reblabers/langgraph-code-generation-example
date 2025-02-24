@@ -8,3 +8,6 @@ python = "3.12"
 
 [tasks.langgraph]
 run = "uv run langgraph up"
+
+[tasks.test]
+run = "uv run pytest"
