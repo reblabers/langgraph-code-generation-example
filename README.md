@@ -1,0 +1,1 @@
+https://arxiv.org/abs/2501.12862v1 の個人用の実装
