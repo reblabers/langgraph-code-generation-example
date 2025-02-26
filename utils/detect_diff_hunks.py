@@ -303,19 +303,3 @@ def verify_hunk_line_numbers(code_lines: List[str], hunk_lines: List[str], sourc
         検証済みの開始行番号と行数のタプル
     """
     return DiffHunkProcessor.verify_line_numbers(code_lines, hunk_lines, source_start, source_length)
-
-
-def hunking(code: str, diff: str) -> List[DiffHunk]:
-    """DIFFをハンクに分割します。
-    
-    注: 後方互換性のために残しています。新しいコードでは DiffHunkProcessor クラスを使用してください。
-
-    Args:
-        code: 対応するソースコード
-        diff: 分割するDIFF文字列
-
-    Returns:
-        DIFFのハンクリスト
-    """
-    processor = DiffHunkProcessor(code, diff)
-    return processor.hunking()

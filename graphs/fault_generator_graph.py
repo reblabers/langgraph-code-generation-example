@@ -1,4 +1,4 @@
-from nodes.state import GlobalState, initial_global_state
+from nodes.state import GlobalState, initial_global_state_for_faults
 from langgraph.graph import StateGraph, START, END
 from nodes.diff_generator_node import DiffGeneratorNode
 from nodes.diff_applier_node import DiffApplierNode
@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Callable
 
 
-def build_code_generator_graph(llm, repository: Repository, is_debug: bool = False) -> StateGraph:
+def build_fault_generator_graph(llm, repository: Repository, is_debug: bool = False) -> StateGraph:
     diff_generator = DiffGeneratorNode(llm)
     diff_applier = DiffApplierNode(repository)
     equivalence_detector = EquivalenceDetectorNode(llm)
@@ -38,4 +38,4 @@ def initial_state(source_code_path: Path, test_code_path: Path) -> GlobalState:
         raise FileNotFoundError(f"Source code file not found: {source_code_path}")
     if not test_code_path.exists():
         raise FileNotFoundError(f"Test code file not found: {test_code_path}")  
-    return initial_global_state(source_code_path, test_code_path)
+    return initial_global_state_for_faults(source_code_path, test_code_path)

@@ -19,7 +19,7 @@ class GlobalState(TypedDict):
     faults: Optional[List[Fault]] = None
 
 
-def initial_global_state(source_code_path: Path, test_code_path: Path) -> GlobalState:
+def initial_global_state_for_faults(source_code_path: Path, test_code_path: Path) -> GlobalState:
     with open(source_code_path) as f:
         source_code = f.read()
     
@@ -31,4 +31,20 @@ def initial_global_state(source_code_path: Path, test_code_path: Path) -> Global
         "test_code_path": test_code_path,
         "source_code": source_code,
         "test_code": test_code,
+    }
+
+
+def initial_global_state_for_code(source_code_path: Path, test_code_path: Path, faults: List[Fault]) -> GlobalState:
+    with open(source_code_path) as f:
+        source_code = f.read()
+    
+    with open(test_code_path) as f:
+        test_code = f.read()
+
+    return {
+        "source_code_path": source_code_path,
+        "test_code_path": test_code_path,
+        "source_code": source_code,
+        "test_code": test_code,
+        "faults": faults,
     }

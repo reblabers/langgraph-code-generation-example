@@ -48,6 +48,7 @@ SOURCE_CODE:
     async def process(self, global_state: GlobalState) -> GlobalState:
         state = LocalState.load_from(global_state)
         result = await self._process(state)
+        result = result if result is not None else {}
         return {**global_state, **result}
 
     async def _process(self, state: LocalState):

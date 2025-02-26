@@ -1,13 +1,15 @@
 import asyncio
 import json
-from graphs.code_generator_graph import build_code_generator_graph, initial_state
+from graphs.fault_generator_graph import build_fault_generator_graph, initial_state
 from utils.credentials import get_default_credentials
 from utils.llm import get_bedrock_llm
 from utils.repository import Repository
 from pathlib import Path
 from typing import TypedDict, List, Optional
+from nodes.state import Fault
 
-class Record(TypedDict):
+
+class FaultRecord(TypedDict):
     source_code_path: str
     diff: str
     is_equivalent: bool
@@ -21,7 +23,7 @@ async def main():
     repository = Repository(Path("repositories/kotlin-tracer-mcp"))
     repository.clean()
 
-    graph = build_code_generator_graph(llm, repository)
+    graph = build_fault_generator_graph(llm, repository)
     
     source_code_path = Path("repositories/kotlin-tracer-mcp/src/main/kotlin/com/example/Finder.kt")
     test_code_path = Path("repositories/kotlin-tracer-mcp/src/test/kotlin/com/example/FinderTest.kt")
@@ -42,7 +44,7 @@ async def main():
         is_equivalent = fault['is_equivalent']
         reason = fault['reason']    
 
-        records.append(Record(
+        records.append(FaultRecord(
             source_code_path=str(source_code_path),
             diff=diff,
             is_equivalent=is_equivalent,

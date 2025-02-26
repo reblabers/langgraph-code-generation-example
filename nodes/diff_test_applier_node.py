@@ -1,4 +1,4 @@
-from utils.diff_applier import apply_diff_to_file_for_mutant
+from utils.diff_applier import apply_diff_to_file
 from .state import GlobalState
 from pathlib import Path
 from typing_extensions import TypedDict
@@ -7,21 +7,26 @@ import shutil
 import hashlib
 import difflib
 from typing import List
-
+from nodes.state import Fault
 
 class LocalState(TypedDict):
     source_code_path: Path
+    test_code_path: Path
+    faults: List[Fault]
     diff: str
 
     @staticmethod
     def load_from(global_state: GlobalState) -> "LocalState":
+        print(global_state)
         return LocalState(
             source_code_path=global_state["source_code_path"],
+            test_code_path=global_state["test_code_path"],
+            faults=global_state["faults"],
             diff=global_state["diff"],
         )
 
 
-class DiffApplierNode:
+class DiffTestApplierNode:
     def __init__(self, repository: Repository):
         self.repository = repository
 
@@ -36,73 +41,69 @@ class DiffApplierNode:
         self.repository.clean()
 
         source_code_path = state["source_code_path"]
-        source_code = source_code_path.read_text()
-        source_code_hash = self._get_code_hash(source_code)
+        test_code_path = state["test_code_path"]
+        faults = state["faults"]
 
-        diff = state["diff"]
+        # テストコードの変更
+        mutated_path = apply_diff_to_file(
+            source_path=test_code_path,
+            diff=state["diff"],
+        )
 
-        # デバッグ用にdiffを保存
-        with open("debug/last_diff_applier.diff", "w") as f:
-            f.write(diff)
+        if mutated_path is None:
+            print("Failed to apply diff to test code")
+            return None
+        
+        shutil.copy(mutated_path, test_code_path)
 
-        diff_mutants = self._extract_diff_mutants(diff)
+        print("TEST APPLIED")
 
-        diff_faults = []
-        for diff_mutant in diff_mutants:
-            print("### APPLYING DIFF ###")
-            
-            # リポジトリをクリーン
-            print("CLEANING")
-            self.repository.clean()
+        try:
+            # テストを実行. テストが失敗したら終了
+            print("TESTING")
+            self.repository.test()
+        except Exception as e:
+            print(f"FAILED TEST: {e}")
+            return None
 
-            # import pprint
-            # pprint.pprint(source_code_path)
-            # pprint.pprint(diff_mutant)
-            
-            mutated_path = apply_diff_to_file_for_mutant(
+        # Faultsの埋め込み. 逆順(ファイル末尾から)で適用
+        for fault in reversed(faults):
+            mutated_path = apply_diff_to_file(
                 source_path=source_code_path,
-                diff=diff_mutant,
+                diff=fault["diff"],
             )
 
             if mutated_path is None:
-                print("Failed to apply diff to file")
-                # print(diff_mutant)
-                continue
+                print("Failed to apply diff to source code")
+                return None
 
             # コードに適用
             shutil.copy(mutated_path, source_code_path)
+        
+        print("FAULT APPLIED")
 
-            try:
-                # テストを実行. テストが失敗したら終了
-                print("TESTING")
-                self.repository.test()
-            except Exception as e:
-                print(f"SKIPPED: {e}")
-                continue
 
-            try:
-                # フォーマットを実行
-                print("FORMATTING")
-                self.repository.format()
-            except Exception as e:
-                pass
+        #     try:
+        #         # フォーマットを実行
+        #         print("FORMATTING")
+        #         self.repository.format()
+        #     except Exception as e:
+        #         pass
 
-            # 変更後のソースコードのハッシュ値を記録
-            mutated_code = mutated_path.read_text()
-            mutated_code_hash = self._get_code_hash(mutated_code)
-            if source_code_hash == mutated_code_hash:
-                print("SKIPPED: ソースコードが変更されていません")
-                continue
+        #     # 変更後のソースコードのハッシュ値を記録
+        #     mutated_code = mutated_path.read_text()
+        #     mutated_code_hash = self._get_code_hash(mutated_code)
+        #     if source_code_hash == mutated_code_hash:
+        #         print("SKIPPED: ソースコードが変更されていません")
+        #         continue
 
-            print("DETECTED FAULT")
+        #     print("DETECTED FAULT")
 
-            # source_code_pathとmutated_pathのdiffを作り直す
-            new_diff = difflib.unified_diff(source_code.splitlines(), mutated_code.splitlines(), lineterm="")
-            diff_faults.append("\n".join(new_diff))
+        #     # source_code_pathとmutated_pathのdiffを作り直す
+        #     new_diff = difflib.unified_diff(source_code.splitlines(), mutated_code.splitlines(), lineterm="")
+        #     diff_faults.append("\n".join(new_diff))
 
-        return {
-            "diff_faults": diff_faults,
-        }
+        return None
 
     def _get_code_hash(self, code: str) -> str:
         without_comments = "\n".join([line for line in code.splitlines() if not line.strip().startswith("//")])
