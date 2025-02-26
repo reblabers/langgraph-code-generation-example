@@ -20,13 +20,13 @@ async def main():
     credentials = get_default_credentials()
     llm = get_bedrock_llm(credentials)
 
-    repository = Repository(Path("repositories/kotlin-tracer-mcp"))
+    repository = Repository(Path("repositories/kotlin-math-utils"))
     repository.clean()
 
     graph = build_fault_generator_graph(llm, repository)
     
-    source_code_path = Path("repositories/kotlin-tracer-mcp/src/main/kotlin/com/example/Finder.kt")
-    test_code_path = Path("repositories/kotlin-tracer-mcp/src/test/kotlin/com/example/FinderTest.kt")
+    source_code_path = Path("repositories/kotlin-math-utils/src/main/kotlin/com/example/math/StatisticsCalculator.kt")
+    test_code_path = Path("repositories/kotlin-math-utils/src/test/kotlin/com/example/math/StatisticsCalculatorTest.kt")
 
     global_state = initial_state(
         source_code_path=source_code_path,
