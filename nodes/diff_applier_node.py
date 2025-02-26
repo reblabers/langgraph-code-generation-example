@@ -48,7 +48,10 @@ class DiffApplierNode:
 
         diff_faults = []
         for diff_mutant in diff_mutants:
+            print("### APPLYING DIFF ###")
+            
             # リポジトリをクリーン
+            print("CLEANING")
             self.repository.clean()
 
             # import pprint
@@ -61,7 +64,8 @@ class DiffApplierNode:
             )
 
             if mutated_path is None:
-                print("Failed to apply diff to file", diff_mutant)
+                print("Failed to apply diff to file")
+                # print(diff_mutant)
                 continue
 
             # コードに適用
@@ -69,6 +73,7 @@ class DiffApplierNode:
 
             try:
                 # テストを実行. テストが失敗したら終了
+                print("TESTING")
                 self.repository.test()
             except Exception as e:
                 print(f"SKIPPED: {e}")
@@ -76,6 +81,7 @@ class DiffApplierNode:
 
             try:
                 # フォーマットを実行
+                print("FORMATTING")
                 self.repository.format()
             except Exception as e:
                 pass
@@ -86,6 +92,8 @@ class DiffApplierNode:
             if source_code_hash == mutated_code_hash:
                 print("SKIPPED: ソースコードが変更されていません")
                 continue
+
+            print("DETECTED FAULT")
 
             # source_code_pathとmutated_pathのdiffを作り直す
             new_diff = difflib.unified_diff(source_code.splitlines(), mutated_code.splitlines(), lineterm="")

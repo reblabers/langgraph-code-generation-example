@@ -78,14 +78,29 @@ EXISTING_TEST_CLASS:
 
     def _rearrange_diff(self, diff: str) -> str:
         difflines = diff.splitlines()
+
+        # STARTタグの前が削除行 or 空白行の場合、STARTタグを前に移動
         for index in range(len(difflines)):
             if "// MUTANT <START>" in difflines[index]:
                 comment_line = difflines[index]
                 i = index
                 while True:
-                    if not difflines[i - 1].startswith("-"):
+                    if not (difflines[i - 1].startswith("-") or not difflines[i - 1].strip()):
                         break
                     difflines[i] = difflines[i - 1]
                     i -= 1
                 difflines[i] = comment_line
+        
+        # ENDタグの後が削除行 or 空白行の場合、ENDタグを後ろに移動
+        for index in reversed(range(len(difflines))):
+            if "// MUTANT <END>" in difflines[index]:
+                comment_line = difflines[index]
+                i = index
+                while True:
+                    if not (difflines[i + 1].startswith("-") or not difflines[i + 1].strip()):
+                        break
+                    difflines[i] = difflines[i + 1]
+                    i += 1
+                difflines[i] = comment_line
+        
         return "\n".join(difflines)
