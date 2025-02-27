@@ -17,7 +17,6 @@ class LocalState(TypedDict):
 
     @staticmethod
     def load_from(global_state: GlobalState) -> "LocalState":
-        print(global_state)
         return LocalState(
             source_code_path=global_state["source_code_path"],
             test_code_path=global_state["test_code_path"],
