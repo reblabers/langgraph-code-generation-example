@@ -36,6 +36,16 @@ async def main():
             reason=fault['reason'],
         ) for fault in faults_json if not fault['is_equivalent']]
 
+    if not faults:
+        print("No faults found")
+        return
+    
+    faults = [faults[0]]
+
+    import pprint
+    print("FAULT COUNT:", len(faults))
+    pprint.pprint(faults)
+
     global_state = initial_state(
         source_code_path=source_code_path,
         test_code_path=test_code_path,

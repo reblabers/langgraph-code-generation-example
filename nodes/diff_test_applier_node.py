@@ -8,6 +8,8 @@ import hashlib
 import difflib
 from typing import List
 from nodes.state import Fault
+import tempfile
+
 
 class LocalState(TypedDict):
     source_code_path: Path
