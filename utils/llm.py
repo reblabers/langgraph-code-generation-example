@@ -18,4 +18,5 @@ def get_bedrock_llm(
         aws_secret_access_key=credentials.secret_access_key,
         aws_session_token=credentials.session_token,
         region_name=region_name,
+        temperature=0.0,
     )
