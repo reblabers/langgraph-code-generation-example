@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List
 
 
-def build_test_generator_graph(llm, repository: Repository, is_debug: bool = True) -> StateGraph:
+def build_test_generator_graph(llm, repository: Repository, is_debug: bool = False) -> StateGraph:
     test_generator = TestGeneratorNode(llm)
     diff_test_applier = DiffTestApplierNode(repository)
     testcode_rewrite_generator = TestRewriteGeneratorNode(llm, repository)
