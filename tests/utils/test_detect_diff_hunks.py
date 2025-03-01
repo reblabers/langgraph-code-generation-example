@@ -1,7 +1,7 @@
 import unittest
 from typing import List, Optional
 
-from utils.detect_diff_hunks import DiffHunk, hunking, verify_hunk_line_numbers
+from utils.detect_diff_hunks import DiffHunk, DiffHunkProcessor, hunking, verify_hunk_line_numbers
 
 
 class TestDetectDiffHunks(unittest.TestCase):
@@ -17,14 +17,16 @@ class TestDetectDiffHunks(unittest.TestCase):
         """空のDIFF文字列をテストします"""
         code = "print('test')\n"
         diff = ""
-        hunks = hunking(code, diff)
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         self.assertEqual(len(hunks), 0)
     
     def test_hunking_no_hunks(self):
         """ハンクを含まないDIFF文字列をテストします"""
         code = "print('test')\n"
         diff = "invalid diff content"
-        hunks = hunking(code, diff)
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         self.assertEqual(len(hunks), 0)
     
     def test_basic_diff_hunking(self):
@@ -43,7 +45,9 @@ class TestDetectDiffHunks(unittest.TestCase):
 +    print("Hello!!!")
      print("World")
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         self.assertEqual(hunks[0].diff_lines[0], " def hello():")
@@ -73,7 +77,9 @@ class TestDetectDiffHunks(unittest.TestCase):
      print(result)
      return result
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 2)
         self.assertEqual(hunks[0].diff_lines[0], "-def calculate(x, y):")
@@ -96,7 +102,9 @@ class TestDetectDiffHunks(unittest.TestCase):
 +
      print("World")
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         self.assertEqual(hunks[0].diff_lines[2], "+")
@@ -117,7 +125,9 @@ class TestDetectDiffHunks(unittest.TestCase):
 +    # 日本語コメント
      print("World")
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         self.assertEqual(hunks[0].diff_lines[2], "-    # コメント")
@@ -146,7 +156,9 @@ class TestDetectDiffHunks(unittest.TestCase):
 +            continue
      return result
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         self.assertEqual(len(hunks[0].diff_lines), 12)  # 実際の出力に合わせて修正
@@ -172,7 +184,9 @@ line5
 +modified line3
  line4
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         # 行番号情報が正しく解析されていることを確認
@@ -211,7 +225,9 @@ def function3():
 +    print("Modified Function 3")
 +    return None
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 2)
         # 最初のハンク
@@ -248,7 +264,9 @@ def function3():
 +    print("Hello!!!")
      print("World")
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         # 行番号情報が修正されていることを確認
@@ -285,7 +303,9 @@ def function3():
 +
     print("World")
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         self.assertEqual(hunks[0].diff_lines[2], "+")
@@ -306,7 +326,9 @@ def function3():
      print("Hello")
 -    print("World")
 +    print("Goodbye")"""
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         # 実際の出力に合わせてアサーションを修正
@@ -334,7 +356,9 @@ def function3():
 -    print("Hello")
      print("World")
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         self.assertEqual(hunks[0].diff_lines[0], " def hello():")
@@ -362,7 +386,9 @@ def function3():
 +    result=x+y
 +    return  result
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         self.assertEqual(hunks[0].diff_lines[1], "-    result = x + y")
@@ -408,7 +434,9 @@ def function3():
      
      return z
 """
-        hunks = hunking(code, diff)
+        # DiffHunkProcessorを使用する形に変更
+        processor = DiffHunkProcessor(code, diff)
+        hunks = processor.hunking()
         
         self.assertEqual(len(hunks), 1)
         # 実際の出力に合わせてアサーションを修正
